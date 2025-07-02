@@ -111,12 +111,12 @@ def index():
             }
             .container { max-width: 1200px; margin: 0 auto; }
             h1 { 
-                color: white; 
+                color: black; /* Changed from white to black */
                 text-align: center; 
                 font-size: 2.5rem; 
                 font-weight: 700; 
                 margin-bottom: 30px; 
-                text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                text-shadow: 0 2px 4px rgba(0,0,0,0.03);
             }
             .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; }
             .card { 
@@ -215,28 +215,6 @@ def index():
             .edit-btn:hover { background: #f6e05e; }
             .delete-btn { background: #e53e3e; color: white; }
             .delete-btn:hover { background: #c53030; }
-            .toggle-btns {
-                display: flex;
-                gap: 15px;
-                margin-bottom: 25px;
-                justify-content: center;
-            }
-            .toggle-btn {
-                background: linear-gradient(135deg, #4299e1, #3182ce);
-                color: white;
-                border: none;
-                padding: 12px 28px;
-                border-radius: 8px;
-                font-size: 1.1rem;
-                font-weight: 600;
-                cursor: pointer;
-                transition: background 0.3s, transform 0.2s;
-            }
-            .toggle-btn.active, .toggle-btn:focus {
-                background: linear-gradient(135deg, #8f5be8, #764ba2);
-                outline: none;
-                transform: scale(1.04);
-            }
             .toggle-section { display: none; }
             .toggle-section.active { display: block; }
             .tabbar {
@@ -274,6 +252,14 @@ def index():
                 display: block;
                 font-size: 1.5rem;
                 margin-bottom: 2px;
+            }
+            /* Horizontal scroll for inventory table */
+            #inventory-table-wrapper {
+                overflow-x: auto;
+                width: 100%;
+            }
+            #inventory-table {
+                min-width: 600px;
             }
             @media (min-width: 769px) {
                 .tabbar { display: none; }
