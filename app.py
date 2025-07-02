@@ -240,10 +240,20 @@ def index():
             .toggle-section { display: none; }
             .toggle-section.active { display: block; }
             @media (max-width: 768px) {
-                body { padding: 15px; }
-                h1 { font-size: 2rem; }
+                body { padding: 15px 10px 160px 10px; } /* More bottom padding for keyboard */
+                h1 { font-size: 1.5rem; margin-bottom: 18px; }
                 .dashboard { grid-template-columns: 1fr; }
-                .card { padding: 20px; }
+                .card { padding: 12px 7px 18px 7px; border-radius: 10px; }
+                .form-group { margin-bottom: 32px; }
+                input, select, button { font-size: 1.13rem; padding: 14px 12px; }
+                label { font-size: 1.05rem; }
+                .profit-amount { font-size: 1.5rem; }
+                .sold-item, .inventory-item { flex-direction: column; align-items: flex-start; gap: 6px; }
+                table { font-size: 0.98rem; }
+                th, td { padding: 7px !important; }
+                .toggle-btns { flex-direction: column; gap: 10px; }
+                .toggle-btn { width: 100%; padding: 14px 0; font-size: 1.08rem; }
+                .edit-btn, .delete-btn { width: 48%; margin: 4px 1%; padding: 10px 0; font-size: 0.98rem; }
             }
         </style>
         <script>
@@ -423,11 +433,11 @@ def index():
         </div>
         <script>
     document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('input').forEach(function(input) {
+        document.querySelectorAll('input, select').forEach(function(input) {
             input.addEventListener('focus', function() {
                 setTimeout(() => {
                     input.scrollIntoView({behavior: 'smooth', block: 'center'});
-                }, 300);
+                }, 200);
             });
         });
     });
