@@ -316,12 +316,6 @@ def index():
                 </div>
             {% endif %}
 
-            <div class="toggle-btns" style="margin-bottom:0;">
-                <button class="toggle-btn" id="btn-inventory" onclick="showSection('inventory')">Current Inventory</button>
-                <button class="toggle-btn" id="btn-add" onclick="showSection('add')">Add New Item</button>
-                <button class="toggle-btn" id="btn-sale" onclick="showSection('sale')">Process Sale</button>
-            </div>
-
             <div class="card profit-card" style="margin-bottom: 30px;">
                 <h2><span class="icon">💰</span>Today's Performance</h2>
                 <div class="profit-amount">MMK{{ today_profit|int }}</div>
@@ -437,19 +431,19 @@ def index():
 
             <div id="sale" class="card toggle-section">
                 <h2><span class="icon">🛒</span>Process Sale</h2>
-                <form action="/sell" method="post" oninput="updateTotalPrice()">
+                <form action="/sell" method="post">
                     <div class="form-group">
                         <label for="sell-name">Item Name</label>
-                        <select id="sell-name" name="name" required style="width:100%;padding:12px 15px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;" onchange="updateTotalPrice()">
+                        <select id="sell-name" name="name" required style="width:100%;padding:12px 15px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;">
                             <option value="">-- Select Item --</option>
                             {% for item in items %}
-                                <option value="{{ item.name }}" data-price="{{ item.sale_price|int }}">{{ item.name }} (Stock: {{ item.stock }})</option>
+                                <option value="{{ item.name }}" data-price="{{ item.sale_price }}">{{ item.name }} (Stock: {{ item.stock }})</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="qty">Quantity to Sell</label>
-                        <input id="qty" name="qty" placeholder="Enter quantity" type="number" min="1" required oninput="updateTotalPrice()">
+                        <input id="qty" name="qty" placeholder="Enter quantity" type="number" min="1" required>
                     </div>
                     <div class="form-group">
                         <label>Total Price (MMK)</label>
@@ -467,26 +461,15 @@ def index():
                     var price = 0;
                     if (select.value) {
                         var selectedOption = select.options[select.selectedIndex];
-                        price = parseInt(selectedOption.getAttribute('data-price')) || 0;
+                        price = parseFloat(selectedOption.getAttribute('data-price')) || 0;
                     }
                     var total = qty * price;
                     totalDiv.innerText = 'MMK' + total;
                 }
-
-                // Attach events after DOM is loaded
-                document.addEventListener('DOMContentLoaded', function() {
-                    var select = document.getElementById('sell-name');
-                    var qtyInput = document.getElementById('qty');
-                    if (select) {
-                        select.addEventListener('change', updateTotalPrice);
-                        select.addEventListener('input', updateTotalPrice);
-                    }
-                    if (qtyInput) {
-                        qtyInput.addEventListener('input', updateTotalPrice);
-                        qtyInput.addEventListener('change', updateTotalPrice);
-                    }
-                    updateTotalPrice();
-                });
+                document.getElementById('sell-name').addEventListener('change', updateTotalPrice);
+                document.getElementById('qty').addEventListener('input', updateTotalPrice);
+                document.getElementById('qty').addEventListener('change', updateTotalPrice);
+                updateTotalPrice();
                 </script>
             </div>
         </div>
@@ -515,7 +498,7 @@ def index():
         var price = 0;
         if (select.value) {
             var selectedOption = select.options[select.selectedIndex];
-            price = parseInt(selectedOption.getAttribute('data-price')) || 0;
+            price = parseFloat(selectedOption.getAttribute('data-price')) || 0;
         }
         var total = qty * price;
         totalDiv.innerText = 'MMK' + total;
