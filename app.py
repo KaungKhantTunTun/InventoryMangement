@@ -1,5 +1,6 @@
 from flask import Flask, render_template_string, request, redirect, url_for
 from datetime import datetime
+import csv
 
 app = Flask(__name__)
 ITEMS_FILE = "items.txt"
@@ -61,10 +62,24 @@ def load_sales():
         pass
     return sales
 
+def load_all_medicines():
+    medicines = []
+    try:
+        with open("medicines.csv", "r", encoding="utf-8") as f:
+            reader = csv.reader(f)
+            next(reader)  # Skip header
+            for row in reader:
+                if len(row) > 1 and row[1].strip():
+                    medicines.append(row[1].strip())
+    except FileNotFoundError:
+        pass
+    return medicines
+
 @app.route("/")
 def index():
     items = load_items()
     sales = load_sales()
+    all_medicines = load_all_medicines()
 
     today = datetime.now().strftime("%Y-%m-%d")
     today_profit = 0
@@ -123,7 +138,7 @@ def index():
                 align-items: center; 
                 gap: 10px;
             }
-            .profit-card { background: linear-gradient(135deg, #48bb78, #38a169); color: white; }
+            .profit-card { background: linear-gradient(135deg, #8f5be8, #764ba2); color: white; }
             .profit-card h2 { color: white; }
             .profit-amount { font-size: 2.5rem; font-weight: 700; margin: 15px 0; }
             .inventory-item { 
@@ -218,7 +233,7 @@ def index():
                 transition: background 0.3s, transform 0.2s;
             }
             .toggle-btn.active, .toggle-btn:focus {
-                background: linear-gradient(135deg, #48bb78, #38a169);
+                background: linear-gradient(135deg, #8f5be8, #764ba2);
                 outline: none;
                 transform: scale(1.04);
             }
@@ -267,7 +282,7 @@ def index():
 
             <div class="card profit-card" style="margin-bottom: 30px;">
                 <h2><span class="icon">💰</span>Today's Performance</h2>
-                <div class="profit-amount">${{ "%.2f"|format(today_profit) }}</div>
+                <div class="profit-amount">MMK{{ "%.2f"|format(today_profit) }}</div>
                 {% if sold_count %}
                     <h3 style="margin-top: 20px; margin-bottom: 15px; color: black;">Items Sold Today:</h3>
                     {% for name, qty in sold_count.items() %}
@@ -283,51 +298,73 @@ def index():
 
             <div id="inventory" class="card toggle-section">
                 <h2><span class="icon">📦</span>Current Inventory</h2>
+                <input type="text" id="inventory-search" placeholder="Search item..." style="margin-bottom:15px;width:100%;padding:10px;border-radius:6px;border:1.5px solid #e2e8f0;">
                 {% if items %}
-                    {% for item in items %}
-                        <div class="inventory-item">
-                            <div>
-                                <div class="item-name">{{ item.name }}</div>
-                                <div class="item-details">
-                                    Stock: {{ item.stock }} units
-                                    {% if item.expiry %}<br>Expiry: {{ item.expiry }}{% endif %}
-                                    {% if item.stock < 5 %}
-                                        <span style="color:#e53e3e;font-weight:bold;">&nbsp;Low Stock!</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div class="item-details">Buy: ${{ "%.2f"|format(item.original_price) }}</div>
-                                <div class="item-details">Sell: ${{ "%.2f"|format(item.sale_price) }}</div>
-                                <form action="/delete/{{ item.name }}" method="post" style="display:inline;">
-                                    <button type="submit" class="delete-btn">Delete</button>
-                                </form>
-                                <a href="/edit/{{ item.name }}"><button type="button" class="edit-btn">Edit</button></a>
-                            </div>
-                        </div>
-                    {% endfor %}
+                    <table id="inventory-table" style="width:100%;border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#f1f5f9;">
+                                <th style="text-align:left;padding:8px;">Name</th>
+                                <th style="text-align:right;padding:8px;">Stock</th>
+                                <th style="text-align:right;padding:8px;">Buy (MMK)</th>
+                                <th style="text-align:right;padding:8px;">Sell (MMK)</th>
+                                <th style="text-align:center;padding:8px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in items %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td style="text-align:right;">{{ item.stock }}</td>
+                                <td style="text-align:right;">MMK{{ "%.2f"|format(item.original_price) }}</td>
+                                <td style="text-align:right;">MMK{{ "%.2f"|format(item.sale_price) }}</td>
+                                <td style="text-align:center;">
+                                    <form action="/delete/{{ item.name }}" method="post" style="display:inline;">
+                                        <button type="submit" class="delete-btn">Delete</button>
+                                    </form>
+                                    <a href="/edit/{{ item.name }}"><button type="button" class="edit-btn">Edit</button></a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
                 {% else %}
                     <div class="no-items">No items in inventory</div>
                 {% endif %}
             </div>
+            <script>
+            document.getElementById('inventory-search').addEventListener('input', function() {
+                var filter = this.value.toLowerCase();
+                document.querySelectorAll('#inventory-table tbody tr').forEach(function(row) {
+                    row.style.display = row.children[0].textContent.toLowerCase().includes(filter) ? '' : 'none';
+                });
+            });
+            </script>
 
             <div id="add" class="card toggle-section">
                 <h2><span class="icon">➕</span>Add New Item</h2>
                 <form action="/add" method="post">
                     <div class="form-group">
                         <label for="name">Item Name</label>
-                        <input id="name" name="name" placeholder="Enter item name" required>
+                        <input id="search-medicine" onkeyup="filterMedicine()" placeholder="Search medicine..." style="margin-bottom:8px;width:100%;padding:10px;border-radius:6px;border:1.5px solid #e2e8f0;">
+                        <select id="name-select" name="name_select" onchange="onMedicineSelect()" style="width:100%;padding:12px 15px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;">
+                            <option value="">-- Select Medicine --</option>
+                            {% for med in all_medicines %}
+                                <option value="{{ med }}">{{ med }}</option>
+                            {% endfor %}
+                            <option value="__custom__">Other (Type manually)</option>
+                        </select>
+                        <input id="name" name="name" placeholder="Enter item name" style="margin-top:8px;" required>
                     </div>
                     <div class="form-group">
                         <label for="stock">Initial Stock</label>
                         <input id="stock" name="stock" placeholder="Enter quantity" type="number" min="0" required>
                     </div>
                     <div class="form-group">
-                        <label for="buy">Purchase Price ($)</label>
+                        <label for="buy">Purchase Price (MMK)</label>
                         <input id="buy" name="buy" placeholder="0.00" type="number" step="0.01" min="0" required>
                     </div>
                     <div class="form-group">
-                        <label for="sell">Selling Price ($)</label>
+                        <label for="sell">Selling Price (MMK)</label>
                         <input id="sell" name="sell" placeholder="0.00" type="number" step="0.01" min="0" required>
                     </div>
                     <div class="form-group">
@@ -336,6 +373,32 @@ def index():
                     </div>
                     <button type="submit">Add to Inventory</button>
                 </form>
+                <script>
+                function onMedicineSelect() {
+                    var sel = document.getElementById('name-select');
+                    var input = document.getElementById('name');
+                    if(sel.value && sel.value !== "__custom__") {
+                        input.value = sel.value;
+                        input.readOnly = true;
+                    } else if(sel.value === "__custom__") {
+                        input.value = "";
+                        input.readOnly = false;
+                        input.focus();
+                    } else {
+                        input.value = "";
+                        input.readOnly = false;
+                    }
+                }
+                function filterMedicine() {
+                    var input = document.getElementById('search-medicine');
+                    var filter = input.value.toLowerCase();
+                    var select = document.getElementById('name-select');
+                    for (var i = 0; i < select.options.length; i++) {
+                        var txt = select.options[i].text.toLowerCase();
+                        select.options[i].style.display = txt.includes(filter) ? '' : 'none';
+                    }
+                }
+                </script>
             </div>
 
             <div id="sale" class="card toggle-section">
@@ -343,7 +406,12 @@ def index():
                 <form action="/sell" method="post">
                     <div class="form-group">
                         <label for="sell-name">Item Name</label>
-                        <input id="sell-name" name="name" placeholder="Enter item name" required>
+                        <select id="sell-name" name="name" required style="width:100%;padding:12px 15px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;">
+                            <option value="">-- Select Item --</option>
+                            {% for item in items %}
+                                <option value="{{ item.name }}">{{ item.name }} (Stock: {{ item.stock }})</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="qty">Quantity to Sell</label>
@@ -353,13 +421,41 @@ def index():
                 </form>
             </div>
         </div>
+        <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('input').forEach(function(input) {
+            input.addEventListener('focus', function() {
+                setTimeout(() => {
+                    input.scrollIntoView({behavior: 'smooth', block: 'center'});
+                }, 300);
+            });
+        });
+    });
+</script>
+<script>
+    // Request notification permission on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+        // If there are low stock items, show a notification
+        {% if low_stock_items %}
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("Low Stock Alert", {
+                body: "{% for item in low_stock_items %}{{ item.name }} ({{ item.stock }} left){% if not loop.last %}, {% endif %}{% endfor %}"
+            });
+        }
+        {% endif %}
+    });
+</script>
     </body>
     </html>
     """,
         items=items,
         today_profit=today_profit,
         sold_count=sold_count,
-        low_stock_items=low_stock_items
+        low_stock_items=low_stock_items,
+        all_medicines=all_medicines
     )
 
 @app.route("/add", methods=["POST"])
@@ -415,11 +511,11 @@ def edit(name):
                     <input id="stock" name="stock" type="number" value="{{item.stock}}" required>
                 </div>
                 <div class="form-group">
-                    <label for="buy">Purchase Price ($)</label>
+                    <label for="buy">Purchase Price (MMK)</label>
                     <input id="buy" name="buy" type="number" step="0.01" value="{{item.original_price}}" required>
                 </div>
                 <div class="form-group">
-                    <label for="sell">Selling Price ($)</label>
+                    <label for="sell">Selling Price (MMK)</label>
                     <input id="sell" name="sell" type="number" step="0.01" value="{{item.sale_price}}" required>
                 </div>
                 <div class="form-group">
@@ -434,10 +530,38 @@ def edit(name):
 
 @app.route("/delete/<name>", methods=["POST"])
 def delete(name):
-    items = load_items()
-    items = [i for i in items if i["name"].lower() != name.lower()]
-    save_items(items)
-    return redirect("/")
+    # Confirm deletion via POST parameter
+    if request.form.get("confirm") == "yes":
+        items = load_items()
+        items = [i for i in items if i["name"].lower() != name.lower()]
+        save_items(items)
+        return redirect("/")
+    else:
+        # Show confirmation page
+        return render_template_string("""
+        <html>
+        <head>
+            <title>Confirm Delete</title>
+            <style>
+                body { font-family: 'Inter', sans-serif; background: #f7fafc; padding: 40px; }
+                .confirm-box { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); text-align: center;}
+                button { background: #e53e3e; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin: 10px;}
+                button.cancel { background: #a0aec0; }
+            </style>
+        </head>
+        <body>
+            <div class="confirm-box">
+                <h2>Confirm Delete</h2>
+                <p>Are you sure you want to delete <strong>{{ name }}</strong> from stock?</p>
+                <form method="post">
+                    <input type="hidden" name="confirm" value="yes">
+                    <button type="submit">Yes, Delete</button>
+                    <a href="/"><button type="button" class="cancel">Cancel</button></a>
+                </form>
+            </div>
+        </body>
+        </html>
+        """, name=name)
 
 @app.route("/sell", methods=["POST"])
 def sell():
