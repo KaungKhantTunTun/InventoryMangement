@@ -239,25 +239,47 @@ def index():
             }
             .toggle-section { display: none; }
             .toggle-section.active { display: block; }
-            /* --- Mobile improvements --- */
+            .tabbar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100vw;
+                background: #fff;
+                border-top: 1.5px solid #e2e8f0;
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+                z-index: 100;
+                height: 62px;
+                box-shadow: 0 -2px 16px rgba(0,0,0,0.07);
+            }
+            .tabbar-btn {
+                flex: 1;
+                text-align: center;
+                padding: 7px 0 0 0;
+                color: #4a5568;
+                font-size: 1.1rem;
+                background: none;
+                border: none;
+                outline: none;
+                font-family: inherit;
+                transition: color 0.2s;
+                cursor: pointer;
+            }
+            .tabbar-btn.active {
+                color: #764ba2;
+                font-weight: 700;
+            }
+            .tabbar-btn .icon {
+                display: block;
+                font-size: 1.5rem;
+                margin-bottom: 2px;
+            }
+            @media (min-width: 769px) {
+                .tabbar { display: none; }
+            }
             @media (max-width: 768px) {
-                body { padding: 18px 6vw 180px 6vw; }
-                .container { max-width: 100vw; }
-                h1 { font-size: 1.25rem; margin-bottom: 22px; }
-                .dashboard { grid-template-columns: 1fr; gap: 12px; }
-                .card { padding: 13px 5vw 22px 5vw; border-radius: 13px; margin-bottom: 18px; }
-                .form-group { margin-bottom: 38px; }
-                input, select, button { font-size: 1.08rem; padding: 15px 11px; }
-                label { font-size: 1.07rem; margin-bottom: 8px; }
-                .profit-amount { font-size: 1.2rem; }
-                .sold-item, .inventory-item { flex-direction: column; align-items: flex-start; gap: 10px; }
-                table { font-size: 0.97rem; }
-                th, td { padding: 10px 4px !important; }
-                .toggle-btns { flex-direction: column; gap: 13px; }
-                .toggle-btn { width: 100%; padding: 15px 0; font-size: 1.09rem; }
-                .edit-btn, .delete-btn { width: 100%; margin: 6px 0 0 0; padding: 13px 0; font-size: 1.01rem; display: block; }
-                .card form { margin-bottom: 0; }
-                #inventory-table-wrapper { overflow-x: auto; }
+                body { padding-bottom: 90px !important; }
             }
         </style>
         <script>
@@ -268,8 +290,14 @@ def index():
                 document.querySelectorAll('.toggle-btn').forEach(function(btn) {
                     btn.classList.remove('active');
                 });
+                document.querySelectorAll('.tabbar-btn').forEach(function(btn) {
+                    btn.classList.remove('active');
+                });
                 document.getElementById(id).classList.add('active');
-                document.getElementById('btn-' + id).classList.add('active');
+                var btn = document.getElementById('btn-' + id);
+                if (btn) btn.classList.add('active');
+                var tabBtn = document.getElementById('tab-' + id);
+                if (tabBtn) tabBtn.classList.add('active');
             }
             window.onload = function() {
                 showSection('inventory');
@@ -288,7 +316,7 @@ def index():
                 </div>
             {% endif %}
 
-            <div class="toggle-btns">
+            <div class="toggle-btns" style="margin-bottom:0;">
                 <button class="toggle-btn" id="btn-inventory" onclick="showSection('inventory')">Current Inventory</button>
                 <button class="toggle-btn" id="btn-add" onclick="showSection('add')">Add New Item</button>
                 <button class="toggle-btn" id="btn-sale" onclick="showSection('sale')">Process Sale</button>
@@ -296,7 +324,7 @@ def index():
 
             <div class="card profit-card" style="margin-bottom: 30px;">
                 <h2><span class="icon">💰</span>Today's Performance</h2>
-                <div class="profit-amount">MMK{{ "%.2f"|format(today_profit) }}</div>
+                <div class="profit-amount">MMK{{ today_profit|int }}</div>
                 {% if sold_count %}
                     <h3 style="margin-top: 20px; margin-bottom: 15px; color: black;">Items Sold Today:</h3>
                     {% for name, qty in sold_count.items() %}
@@ -330,8 +358,8 @@ def index():
                             <tr>
                                 <td>{{ item.name }}</td>
                                 <td style="text-align:right;">{{ item.stock }}</td>
-                                <td style="text-align:right;">MMK{{ "%.2f"|format(item.original_price) }}</td>
-                                <td style="text-align:right;">MMK{{ "%.2f"|format(item.sale_price) }}</td>
+                                <td style="text-align:right;">MMK{{ item.original_price|int }}</td>
+                                <td style="text-align:right;">MMK{{ item.sale_price|int }}</td>
                                 <td style="text-align:center;">
                                     <form action="/delete/{{ item.name }}" method="post" style="display:inline;">
                                         <button type="submit" class="delete-btn">Delete</button>
@@ -361,7 +389,6 @@ def index():
                 <form action="/add" method="post">
                     <div class="form-group">
                         <label for="name">Item Name</label>
-                        <input id="search-medicine" onkeyup="filterMedicine()" placeholder="Search medicine..." style="margin-bottom:8px;width:100%;padding:10px;border-radius:6px;border:1.5px solid #e2e8f0;">
                         <select id="name-select" name="name_select" onchange="onMedicineSelect()" style="width:100%;padding:12px 15px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;">
                             <option value="">-- Select Medicine --</option>
                             {% for med in all_medicines %}
@@ -405,47 +432,111 @@ def index():
                         input.readOnly = false;
                     }
                 }
-                function filterMedicine() {
-                    var input = document.getElementById('search-medicine');
-                    var filter = input.value.toLowerCase();
-                    var select = document.getElementById('name-select');
-                    for (var i = 0; i < select.options.length; i++) {
-                        var txt = select.options[i].text.toLowerCase();
-                        select.options[i].style.display = txt.includes(filter) ? '' : 'none';
-                    }
-                }
                 </script>
             </div>
 
             <div id="sale" class="card toggle-section">
                 <h2><span class="icon">🛒</span>Process Sale</h2>
-                <form action="/sell" method="post">
+                <form action="/sell" method="post" oninput="updateTotalPrice()">
                     <div class="form-group">
                         <label for="sell-name">Item Name</label>
-                        <select id="sell-name" name="name" required style="width:100%;padding:12px 15px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;">
+                        <select id="sell-name" name="name" required style="width:100%;padding:12px 15px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;" onchange="updateTotalPrice()">
                             <option value="">-- Select Item --</option>
                             {% for item in items %}
-                                <option value="{{ item.name }}">{{ item.name }} (Stock: {{ item.stock }})</option>
+                                <option value="{{ item.name }}" data-price="{{ item.sale_price|int }}">{{ item.name }} (Stock: {{ item.stock }})</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="qty">Quantity to Sell</label>
-                        <input id="qty" name="qty" placeholder="Enter quantity" type="number" min="1" required>
+                        <input id="qty" name="qty" placeholder="Enter quantity" type="number" min="1" required oninput="updateTotalPrice()">
+                    </div>
+                    <div class="form-group">
+                        <label>Total Price (MMK)</label>
+                        <div id="total-price" style="font-weight:700;font-size:1.2rem;">MMK0</div>
                     </div>
                     <button type="submit">Complete Sale</button>
                 </form>
+                <script>
+                function updateTotalPrice() {
+                    var select = document.getElementById('sell-name');
+                    var qtyInput = document.getElementById('qty');
+                    var totalDiv = document.getElementById('total-price');
+                    if (!select || !qtyInput || !totalDiv) return;
+                    var qty = parseInt(qtyInput.value) || 0;
+                    var price = 0;
+                    if (select.value) {
+                        var selectedOption = select.options[select.selectedIndex];
+                        price = parseInt(selectedOption.getAttribute('data-price')) || 0;
+                    }
+                    var total = qty * price;
+                    totalDiv.innerText = 'MMK' + total;
+                }
+
+                // Attach events after DOM is loaded
+                document.addEventListener('DOMContentLoaded', function() {
+                    var select = document.getElementById('sell-name');
+                    var qtyInput = document.getElementById('qty');
+                    if (select) {
+                        select.addEventListener('change', updateTotalPrice);
+                        select.addEventListener('input', updateTotalPrice);
+                    }
+                    if (qtyInput) {
+                        qtyInput.addEventListener('input', updateTotalPrice);
+                        qtyInput.addEventListener('change', updateTotalPrice);
+                    }
+                    updateTotalPrice();
+                });
+                </script>
             </div>
         </div>
+        <!-- Bottom Tab Bar -->
+        <nav class="tabbar">
+            <button class="tabbar-btn" id="tab-inventory" onclick="showSection('inventory')">
+                <span class="icon">📦</span>
+                <span style="font-size:0.98rem;">Inventory</span>
+            </button>
+            <button class="tabbar-btn" id="tab-add" onclick="showSection('add')">
+                <span class="icon">➕</span>
+                <span style="font-size:0.98rem;">Add</span>
+            </button>
+            <button class="tabbar-btn" id="tab-sale" onclick="showSection('sale')">
+                <span class="icon">🛒</span>
+                <span style="font-size:0.98rem;">Sale</span>
+            </button>
+        </nav>
         <script>
+    function updateTotalPrice() {
+        var select = document.getElementById('sell-name');
+        var qtyInput = document.getElementById('qty');
+        var totalDiv = document.getElementById('total-price');
+        if (!select || !qtyInput || !totalDiv) return;
+        var qty = parseInt(qtyInput.value) || 0;
+        var price = 0;
+        if (select.value) {
+            var selectedOption = select.options[select.selectedIndex];
+            price = parseInt(selectedOption.getAttribute('data-price')) || 0;
+        }
+        var total = qty * price;
+        totalDiv.innerText = 'MMK' + total;
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('input, select').forEach(function(input) {
-            input.addEventListener('focus', function() {
-                setTimeout(() => {
-                    input.scrollIntoView({behavior: 'smooth', block: 'center'});
-                }, 200);
+        // Tab bar activation
+        document.querySelectorAll('.tabbar-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tabbar-btn').forEach(function(b) {
+                    b.classList.remove('active');
+                });
+                btn.classList.add('active');
             });
         });
+        // Always update price on load and on input
+        var select = document.getElementById('sell-name');
+        var qtyInput = document.getElementById('qty');
+        if (select) select.addEventListener('change', updateTotalPrice);
+        if (qtyInput) qtyInput.addEventListener('input', updateTotalPrice);
+        updateTotalPrice();
     });
 </script>
 <script>
@@ -600,7 +691,7 @@ def profit():
     date = request.args.get("date", datetime.now().strftime("%Y-%m-%d"))
     sales = load_sales()
     profit = sum(s["profit"] for s in sales if s["date"] == date)
-    return f"Profit for {date}: ${profit:.2f}"
+    return f"Profit for {date}: MMK{int(profit)}"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=81)
