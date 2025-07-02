@@ -99,7 +99,7 @@ def index():
     <html>
     <head>
         <title>Simple Inventory System</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -239,21 +239,25 @@ def index():
             }
             .toggle-section { display: none; }
             .toggle-section.active { display: block; }
+            /* --- Mobile improvements --- */
             @media (max-width: 768px) {
-                body { padding: 15px 10px 160px 10px; } /* More bottom padding for keyboard */
-                h1 { font-size: 1.5rem; margin-bottom: 18px; }
-                .dashboard { grid-template-columns: 1fr; }
-                .card { padding: 12px 7px 18px 7px; border-radius: 10px; }
-                .form-group { margin-bottom: 32px; }
-                input, select, button { font-size: 1.13rem; padding: 14px 12px; }
-                label { font-size: 1.05rem; }
-                .profit-amount { font-size: 1.5rem; }
-                .sold-item, .inventory-item { flex-direction: column; align-items: flex-start; gap: 6px; }
-                table { font-size: 0.98rem; }
-                th, td { padding: 7px !important; }
-                .toggle-btns { flex-direction: column; gap: 10px; }
-                .toggle-btn { width: 100%; padding: 14px 0; font-size: 1.08rem; }
-                .edit-btn, .delete-btn { width: 48%; margin: 4px 1%; padding: 10px 0; font-size: 0.98rem; }
+                body { padding: 18px 6vw 180px 6vw; }
+                .container { max-width: 100vw; }
+                h1 { font-size: 1.25rem; margin-bottom: 22px; }
+                .dashboard { grid-template-columns: 1fr; gap: 12px; }
+                .card { padding: 13px 5vw 22px 5vw; border-radius: 13px; margin-bottom: 18px; }
+                .form-group { margin-bottom: 38px; }
+                input, select, button { font-size: 1.08rem; padding: 15px 11px; }
+                label { font-size: 1.07rem; margin-bottom: 8px; }
+                .profit-amount { font-size: 1.2rem; }
+                .sold-item, .inventory-item { flex-direction: column; align-items: flex-start; gap: 10px; }
+                table { font-size: 0.97rem; }
+                th, td { padding: 10px 4px !important; }
+                .toggle-btns { flex-direction: column; gap: 13px; }
+                .toggle-btn { width: 100%; padding: 15px 0; font-size: 1.09rem; }
+                .edit-btn, .delete-btn { width: 100%; margin: 6px 0 0 0; padding: 13px 0; font-size: 1.01rem; display: block; }
+                .card form { margin-bottom: 0; }
+                #inventory-table-wrapper { overflow-x: auto; }
             }
         </style>
         <script>
@@ -309,6 +313,7 @@ def index():
             <div id="inventory" class="card toggle-section">
                 <h2><span class="icon">📦</span>Current Inventory</h2>
                 <input type="text" id="inventory-search" placeholder="Search item..." style="margin-bottom:15px;width:100%;padding:10px;border-radius:6px;border:1.5px solid #e2e8f0;">
+                <div id="inventory-table-wrapper">
                 {% if items %}
                     <table id="inventory-table" style="width:100%;border-collapse:collapse;">
                         <thead>
@@ -340,6 +345,7 @@ def index():
                 {% else %}
                     <div class="no-items">No items in inventory</div>
                 {% endif %}
+                </div>
             </div>
             <script>
             document.getElementById('inventory-search').addEventListener('input', function() {
